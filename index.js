@@ -39,7 +39,6 @@ app.post('/food-entry', async (req, res) => {
   if (!foodItem || !calories) {
     return res.status(400).send('Food item and calories are required');
   }
-
   try {
     const query = 'INSERT INTO foodEntry (food, calories) VALUES (?, ?)';
     await connection.execute(query, [foodItem, calories]);
