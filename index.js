@@ -1,5 +1,5 @@
 const express = require('express');
-const mysql = require('mysql2/promise');
+const redis = require('redis');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 
@@ -10,54 +10,36 @@ const port = process.env.PORT || 3000;
 app.use(bodyParser.json());
 app.use(cors());
 
-// MySQL connection
-const dbConfig = {
-  host: 'viaduct.proxy.rlwy.net',
-  user: 'root',
-  password: 'QfkUeRbkZcLajihYecWVUkZLnTSOsYUM',
-  database: 'railway',
-  port: 28002,
-};
+// Redis client setup
+const redisUrl = 'redis://default:pVfsPsHSoGstDPuOSwuQYFYLZUPvJIwb@viaduct.proxy.rlwy.net:11001';
+const client = redis.createClient({ url: redisUrl });
 
-let connection;
+client.on('error', (err) => console.error('Redis Client Error', err));
 
-const connectToDatabase = async () => {
-  try {
-    connection = await mysql.createConnection(dbConfig);
-    console.log('Connected to MySQL');
-  } catch (error) {
-    console.error('MySQL connection error:', error);
-    process.exit(1);
-  }
-};
-
-connectToDatabase();
+client.connect().then(() => {
+  console.log('Connected to Redis');
+});
 
 // API endpoints
 app.post('/food-entry', async (req, res) => {
   const { userName, foodItem, calories } = req.body;
   if (!userName || !foodItem || !calories) {
-    return res.status(400).send('Username, food item, and calories are required');
+    return res.status(400).send('User name, food item, and calories are required');
   }
 
-  try {
-    const query = 'INSERT INTO foodEntry (userName, food, calories) VALUES (?, ?, ?)';
-    await connection.execute(query, [userName, foodItem, calories]);
-    res.status(201).send('Food entry added');
-  } catch (error) {
-    console.error('Error adding food entry:', error);
-    res.status(500).send('Internal Server Error');
-  }
+  const id = `food:${Date.now()}`;
+  await client.hSet(id, 'userName', userName, 'foodItem', foodItem, 'calories', calories);
+  res.status(201).send('Food entry added');
 });
 
 app.get('/food-entries', async (req, res) => {
-  try {
-    const [rows] = await connection.execute('SELECT * FROM food_entries');
-    res.json(rows);
-  } catch (error) {
-    console.error('Error fetching food entries:', error);
-    res.status(500).send('Internal Server Error');
+  const keys = await client.keys('food:*');
+  const foodEntries = [];
+  for (const key of keys) {
+    const entry = await client.hGetAll(key);
+    foodEntries.push(entry);
   }
+  res.json(foodEntries);
 });
 
 app.listen(port, () => {
