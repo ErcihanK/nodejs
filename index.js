@@ -60,7 +60,6 @@ app.get('/food-entries', async (req, res) => {
   }
 });
 
-console.log('Hello Worldcc');
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
