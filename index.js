@@ -35,14 +35,14 @@ connectToDatabase();
 
 // API endpoints
 app.post('/food-entry', async (req, res) => {
-  const { foodItem, calories } = req.body;
-  if (!foodItem || !calories) {
-    return res.status(400).send('Food item and calories are required');
+  const { userName, foodItem, calories } = req.body;
+  if (!userName || !foodItem || !calories) {
+    return res.status(400).send('Username, food item, and calories are required');
   }
 
   try {
-    const query = 'INSERT INTO foodEntry (food, calories) VALUES (?, ?)';
-    await connection.execute(query, [foodItem, calories]);
+    const query = 'INSERT INTO foodEntry (userName, food, calories) VALUES (?, ?, ?)';
+    await connection.execute(query, [userName, foodItem, calories]);
     res.status(201).send('Food entry added');
   } catch (error) {
     console.error('Error adding food entry:', error);
