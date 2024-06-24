@@ -29,8 +29,18 @@ app.post('/food-entry', async (req, res) => {
 
   const id = `food:${Date.now()}`;
   console.log('Adding to Redis:', id, { userName, foodItem, calories });
-  await client.hSet(id, 'userName', userName, 'foodItem', foodItem, 'calories', calories);
-  res.status(201).send('Food entry added');
+
+  try {
+    // Setting each field individually
+    await client.hSet(id, 'userName', userName);
+    await client.hSet(id, 'foodItem', foodItem);
+    await client.hSet(id, 'calories', calories);
+
+    res.status(201).send('Food entry added');
+  } catch (error) {
+    console.error('Error adding to Redis:', error);
+    res.status(500).send('Error adding food entry');
+  }
 });
 
 app.get('/food-entries', async (req, res) => {
