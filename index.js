@@ -27,8 +27,7 @@ app.post('/food-entry', async (req, res) => {
     return res.status(400).send('User name, food item, and calories are required');
   }
 
-  const id = `food:${Date.now()}`;
-  console.log('Adding to Redis:', id, { userName, foodItem, calories }); // Add this line
+  const id = food:${Date.now()};
   await client.hSet(id, 'userName', userName, 'foodItem', foodItem, 'calories', calories);
   res.status(201).send('Food entry added');
 });
