@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // Redis client setup
-const redisUrl = 'redis://default:svEgmrXpJcmVvFWaBiDWbAQPpoYIzYHm@monorail.proxy.rlwy.net:13387';
+const redisUrl = 'redis://default:pVfsPsHSoGstDPuOSwuQYFYLZUPvJIwb@viaduct.proxy.rlwy.net:11001';
 const client = redis.createClient({ url: redisUrl });
 
 client.on('error', (err) => console.error('Redis Client Error', err));
