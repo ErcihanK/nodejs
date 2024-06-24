@@ -6,10 +6,10 @@
   "author": "alphasec",
   "license": "MIT",
   "dependencies": {
-    "express": "^4.17.1",
-    "redis": "^3.1.2",
-    "body-parser": "^1.19.0",
-    "cors": "^2.8.5"
+    "express": "",
+    "redis": "",
+    "body-parser": "",
+    "cors": ""
   },
   "scripts": {
     "start": "node index.js"
