@@ -48,9 +48,28 @@ app.get('/food-entries', async (req, res) => {
   const foodEntries = [];
   for (const key of keys) {
     const entry = await client.hGetAll(key);
+    entry.id = key; // Add the key as an ID to each entry for identification
     foodEntries.push(entry);
   }
   res.json(foodEntries);
+});
+
+// Delete endpoint
+app.delete('/food-entry/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const exists = await client.exists(id);
+    if (!exists) {
+      return res.status(404).send('Food entry not found');
+    }
+
+    await client.del(id);
+    res.status(200).send('Food entry deleted');
+  } catch (error) {
+    console.error('Error deleting from Redis:', error);
+    res.status(500).send('Error deleting food entry');
+  }
 });
 
 app.listen(port, () => {
