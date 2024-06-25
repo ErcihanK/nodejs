@@ -44,12 +44,15 @@ app.post('/food-entry', async (req, res) => {
 });
 
 app.get('/food-entries', async (req, res) => {
-  const keys = await client.keys('food:*');
+  const { userName } = req.query;
+  const keys = await client.keys(`food:${userName}:*`); // Assuming keys are stored with a pattern like food:<userName>:<entryId>
   const foodEntries = [];
+  
   for (const key of keys) {
     const entry = await client.hGetAll(key);
     foodEntries.push(entry);
   }
+
   res.json(foodEntries);
 });
 
