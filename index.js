@@ -87,16 +87,17 @@ app.get('/messages', async (req, res) => {
 
 // API endpoint to post a new message
 app.post('/messages', async (req, res) => {
-  const { message } = req.body;
-  if (!message) {
-    return res.status(400).send('Message is required');
+  const { userName, message } = req.body;
+  if (!userName || !message) {
+    return res.status(400).send('User name and message are required');
   }
 
   const id = `message:${Date.now()}`;
-  const newMessage = { message, timestamp: new Date().toISOString() };
+  const newMessage = { userName, message, timestamp: new Date().toISOString() };
   console.log('Adding to Redis:', id, newMessage);
 
   try {
+    await client.hSet(id, 'userName', newMessage.userName);
     await client.hSet(id, 'message', newMessage.message);
     await client.hSet(id, 'timestamp', newMessage.timestamp);
 
