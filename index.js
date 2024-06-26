@@ -126,20 +126,31 @@ app.get('/threads/:id', async (req, res) => {
     replies.push(reply);
   }
 
-  thread.replies = replies;
+  // Organize replies by parent
+  const replyMap = {};
+  replies.forEach(reply => {
+    if (!reply.replyTo) {
+      replyMap[reply.id] = { ...reply, children: [] };
+    } else {
+      if (!replyMap[reply.replyTo]) replyMap[reply.replyTo] = { children: [] };
+      replyMap[reply.replyTo].children.push(reply);
+    }
+  });
+
+  thread.replies = Object.values(replyMap).filter(reply => !reply.replyTo);
   res.json(thread);
 });
 
 // API endpoint to post a reply to a thread
 app.post('/threads/:id/replies', async (req, res) => {
   const { id } = req.params;
-  const { userName, message } = req.body;
+  const { userName, message, replyTo } = req.body; // Add replyTo field
   if (!userName || !message) {
     return res.status(400).send('User name and message are required');
   }
 
   const replyId = `reply:${id}:${Date.now()}`;
-  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString(), likes: 0, dislikes: 0, likedBy: [], dislikedBy: [] };
+  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString(), likes: 0, dislikes: 0, replyTo: replyTo || null, likedBy: [], dislikedBy: [] };
   console.log('Adding to Redis:', replyId, newReply);
 
   try {
@@ -149,6 +160,7 @@ app.post('/threads/:id/replies', async (req, res) => {
     await client.hSet(replyId, 'timestamp', newReply.timestamp);
     await client.hSet(replyId, 'likes', newReply.likes);
     await client.hSet(replyId, 'dislikes', newReply.dislikes);
+    await client.hSet(replyId, 'replyTo', newReply.replyTo);
     await client.hSet(replyId, 'likedBy', JSON.stringify(newReply.likedBy));
     await client.hSet(replyId, 'dislikedBy', JSON.stringify(newReply.dislikedBy));
 
