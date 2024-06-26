@@ -11,7 +11,7 @@ app.use(bodyParser.json());
 app.use(cors());
 
 // Redis client setup
-const redisUrl = 'redis://default:pVfsPsHSoGstDPuOSwuQYFYLZUPvJIwb@viaduct.proxy.rlwy.net:11001';
+const redisUrl = process.env.REDIS_URL || 'redis://default:pVfsPsHSoGstDPuOSwuQYFYLZUPvJIwb@viaduct.proxy.rlwy.net:11001';
 const client = redis.createClient({ url: redisUrl });
 
 client.on('error', (err) => console.error('Redis Client Error', err));
@@ -31,7 +31,6 @@ app.post('/food-entry', async (req, res) => {
   console.log('Adding to Redis:', id, { userName, foodItem, calories });
 
   try {
-    // Setting each field individually
     await client.hSet(id, 'userName', userName);
     await client.hSet(id, 'foodItem', foodItem);
     await client.hSet(id, 'calories', calories);
@@ -49,7 +48,7 @@ app.get('/food-entries', async (req, res) => {
   const foodEntries = [];
   for (const key of keys) {
     const entry = await client.hGetAll(key);
-    entry.id = key; // Add the key as an ID to each entry for identification
+    entry.id = key;
     foodEntries.push(entry);
   }
   res.json(foodEntries);
@@ -98,7 +97,6 @@ app.post('/messages', async (req, res) => {
   console.log('Adding to Redis:', id, newMessage);
 
   try {
-    // Setting each field individually
     await client.hSet(id, 'message', newMessage.message);
     await client.hSet(id, 'timestamp', newMessage.timestamp);
 
