@@ -42,7 +42,7 @@ app.get('/random-workouts', (req, res) => {
   res.json(randomWorkouts);
 });
 
-// API endpoints
+// API endpoint to post a new food entry
 app.post('/food-entry', async (req, res) => {
   const { userName, foodItem, calories } = req.body;
   if (!userName || !foodItem || !calories) {
@@ -65,6 +65,7 @@ app.post('/food-entry', async (req, res) => {
   }
 });
 
+// API endpoint to get all food entries
 app.get('/food-entries', async (req, res) => {
   const keys = await client.keys('food:*');
   const foodEntries = [];
@@ -76,7 +77,7 @@ app.get('/food-entries', async (req, res) => {
   res.json(foodEntries);
 });
 
-// Delete endpoint
+// API endpoint to delete a food entry
 app.delete('/food-entry/:id', async (req, res) => {
   const { id } = req.params;
 
@@ -91,6 +92,42 @@ app.delete('/food-entry/:id', async (req, res) => {
   } catch (error) {
     console.error('Error deleting from Redis:', error);
     res.status(500).send('Error deleting food entry');
+  }
+});
+
+// Community forum endpoints
+
+// API endpoint to get all messages
+app.get('/messages', async (req, res) => {
+  const keys = await client.keys('message:*');
+  const messages = [];
+  for (const key of keys) {
+    const message = await client.hGetAll(key);
+    messages.push(message);
+  }
+  res.json(messages);
+});
+
+// API endpoint to post a new message
+app.post('/messages', async (req, res) => {
+  const { message } = req.body;
+  if (!message) {
+    return res.status(400).send('Message is required');
+  }
+
+  const id = `message:${Date.now()}`;
+  const newMessage = { message, timestamp: new Date().toISOString() };
+  console.log('Adding to Redis:', id, newMessage);
+
+  try {
+    // Setting each field individually
+    await client.hSet(id, 'message', newMessage.message);
+    await client.hSet(id, 'timestamp', newMessage.timestamp);
+
+    res.status(201).send(newMessage);
+  } catch (error) {
+    console.error('Error adding to Redis:', error);
+    res.status(500).send('Error adding message');
   }
 });
 
