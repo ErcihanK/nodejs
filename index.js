@@ -167,7 +167,7 @@ app.post('/threads/:id/replies', async (req, res) => {
     res.status(201).send(newReply);
   } catch (error) {
     console.error('Error adding to Redis:', error);
-    res.status(500).send('Error adding reply');
+    res.status(500).send('Error adding reply: ' + error.message);
   }
 });
 
