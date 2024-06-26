@@ -139,7 +139,7 @@ app.post('/threads/:id/replies', async (req, res) => {
   }
 
   const replyId = `reply:${id}:${Date.now()}`;
-  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString() };
+  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString(), likes: 0, dislikes: 0 };
   console.log('Adding to Redis:', replyId, newReply);
 
   try {
@@ -147,11 +147,41 @@ app.post('/threads/:id/replies', async (req, res) => {
     await client.hSet(replyId, 'userName', newReply.userName);
     await client.hSet(replyId, 'message', newReply.message);
     await client.hSet(replyId, 'timestamp', newReply.timestamp);
+    await client.hSet(replyId, 'likes', newReply.likes);
+    await client.hSet(replyId, 'dislikes', newReply.dislikes);
 
     res.status(201).send(newReply);
   } catch (error) {
     console.error('Error adding to Redis:', error);
     res.status(500).send('Error adding reply');
+  }
+});
+
+// API endpoint to like a reply
+app.post('/threads/:threadId/replies/:replyId/like', async (req, res) => {
+  const { replyId } = req.params;
+
+  try {
+    await client.hIncrBy(replyId, 'likes', 1);
+    const updatedReply = await client.hGetAll(replyId);
+    res.status(200).send(updatedReply);
+  } catch (error) {
+    console.error('Error liking reply:', error);
+    res.status(500).send('Error liking reply');
+  }
+});
+
+// API endpoint to dislike a reply
+app.post('/threads/:threadId/replies/:replyId/dislike', async (req, res) => {
+  const { replyId } = req.params;
+
+  try {
+    await client.hIncrBy(replyId, 'dislikes', 1);
+    const updatedReply = await client.hGetAll(replyId);
+    res.status(200).send(updatedReply);
+  } catch (error) {
+    console.error('Error disliking reply:', error);
+    res.status(500).send('Error disliking reply');
   }
 });
 
