@@ -2,23 +2,13 @@ const express = require('express');
 const redis = require('redis');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const session = require('express-session'); // Add session management
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(bodyParser.json());
-app.use(cors({
-  origin: 'http://localhost:3000', // Adjust according to your frontend URL
-  credentials: true
-}));
-app.use(session({
-  secret: 'your-secret-key',
-  resave: false,
-  saveUninitialized: true,
-  cookie: { secure: false } // Set secure: true in production
-}));
+app.use(cors());
 
 // Redis client setup
 const redisUrl = process.env.REDIS_URL || 'redis://default:pVfsPsHSoGstDPuOSwuQYFYLZUPvJIwb@viaduct.proxy.rlwy.net:11001';
@@ -28,83 +18,6 @@ client.on('error', (err) => console.error('Redis Client Error', err));
 
 client.connect().then(() => {
   console.log('Connected to Redis');
-});
-
-// Middleware to check user roles
-const checkRole = (role) => {
-  return async (req, res, next) => {
-    const userId = req.session.userId; // Assuming userId is set after authentication
-    const userRole = await client.hGet(`user:${userId}`, 'role');
-    if (userRole !== role) {
-      return res.status(403).send('Access denied');
-    }
-    next();
-  };
-};
-
-// API endpoint to register a new user with a role
-app.post('/register', async (req, res) => {
-  const { userName, password, role } = req.body; // Include role in the request body
-  if (!userName || !password || !role) {
-    return res.status(400).send('Username, password, and role are required');
-  }
-
-  const id = `user:${userName}`;
-  try {
-    await client.hSet(id, 'userName', userName);
-    await client.hSet(id, 'password', password); // Note: Password should be hashed in a real application
-    await client.hSet(id, 'role', role);
-    res.status(201).send('User registered');
-  } catch (error) {
-    console.error('Error registering user:', error);
-    res.status(500).send('Error registering user');
-  }
-});
-
-// API endpoint to login user
-app.post('/login', async (req, res) => {
-  const { userName, password } = req.body;
-  if (!userName || !password) {
-    return res.status(400).send('Username and password are required');
-  }
-
-  const userKey = `user:${userName}`;
-  const storedPassword = await client.hGet(userKey, 'password');
-  if (storedPassword !== password) {
-    return res.status(401).send('Invalid credentials');
-  }
-
-  const role = await client.hGet(userKey, 'role');
-  req.session.userId = userName; // Use session to store user ID
-  req.session.role = role; // Use session to store user role
-
-  res.status(200).send({ userName, role });
-});
-
-// API endpoint to get user role
-app.get('/user-role', async (req, res) => {
-  const userId = req.session.userId; // Assuming you have session management
-  if (!userId) {
-    return res.status(401).send('User not logged in');
-  }
-
-  try {
-    const role = await client.hGet(`user:${userId}`, 'role');
-    res.json({ role });
-  } catch (error) {
-    console.error('Error fetching user role:', error);
-    res.status(500).send('Error fetching user role');
-  }
-});
-
-// Admin-only route
-app.get('/admin-dashboard', checkRole('admin'), async (req, res) => {
-  res.send('Welcome to the admin dashboard');
-});
-
-// Normal user route
-app.get('/user-dashboard', checkRole('normal'), async (req, res) => {
-  res.send('Welcome to the user dashboard');
 });
 
 // API endpoint to post a new food entry
