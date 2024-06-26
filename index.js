@@ -139,7 +139,7 @@ app.post('/threads/:id/replies', async (req, res) => {
   }
 
   const replyId = `reply:${id}:${Date.now()}`;
-  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString(), likes: 0, dislikes: 0 };
+  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString(), likes: 0, dislikes: 0, likedBy: [], dislikedBy: [] };
   console.log('Adding to Redis:', replyId, newReply);
 
   try {
@@ -149,6 +149,8 @@ app.post('/threads/:id/replies', async (req, res) => {
     await client.hSet(replyId, 'timestamp', newReply.timestamp);
     await client.hSet(replyId, 'likes', newReply.likes);
     await client.hSet(replyId, 'dislikes', newReply.dislikes);
+    await client.hSet(replyId, 'likedBy', JSON.stringify(newReply.likedBy));
+    await client.hSet(replyId, 'dislikedBy', JSON.stringify(newReply.dislikedBy));
 
     res.status(201).send(newReply);
   } catch (error) {
@@ -160,9 +162,23 @@ app.post('/threads/:id/replies', async (req, res) => {
 // API endpoint to like a reply
 app.post('/threads/:threadId/replies/:replyId/like', async (req, res) => {
   const { replyId } = req.params;
+  const { userName } = req.body;
 
   try {
-    await client.hIncrBy(replyId, 'likes', 1);
+    const reply = await client.hGetAll(replyId);
+    const likedBy = JSON.parse(reply.likedBy || '[]');
+
+    if (likedBy.includes(userName)) {
+      return res.status(400).send('User already liked this reply');
+    }
+
+    likedBy.push(userName);
+    const dislikedBy = JSON.parse(reply.dislikedBy || '[]').filter(user => user !== userName);
+
+    await client.hSet(replyId, 'likes', parseInt(reply.likes) + 1);
+    await client.hSet(replyId, 'dislikedBy', JSON.stringify(dislikedBy));
+    await client.hSet(replyId, 'likedBy', JSON.stringify(likedBy));
+
     const updatedReply = await client.hGetAll(replyId);
     res.status(200).send(updatedReply);
   } catch (error) {
@@ -174,9 +190,23 @@ app.post('/threads/:threadId/replies/:replyId/like', async (req, res) => {
 // API endpoint to dislike a reply
 app.post('/threads/:threadId/replies/:replyId/dislike', async (req, res) => {
   const { replyId } = req.params;
+  const { userName } = req.body;
 
   try {
-    await client.hIncrBy(replyId, 'dislikes', 1);
+    const reply = await client.hGetAll(replyId);
+    const dislikedBy = JSON.parse(reply.dislikedBy || '[]');
+
+    if (dislikedBy.includes(userName)) {
+      return res.status(400).send('User already disliked this reply');
+    }
+
+    dislikedBy.push(userName);
+    const likedBy = JSON.parse(reply.likedBy || '[]').filter(user => user !== userName);
+
+    await client.hSet(replyId, 'dislikes', parseInt(reply.dislikes) + 1);
+    await client.hSet(replyId, 'likedBy', JSON.stringify(likedBy));
+    await client.hSet(replyId, 'dislikedBy', JSON.stringify(dislikedBy));
+
     const updatedReply = await client.hGetAll(replyId);
     res.status(200).send(updatedReply);
   } catch (error) {
