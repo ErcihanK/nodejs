@@ -74,37 +74,84 @@ app.delete('/food-entry/:id', async (req, res) => {
 
 // Community forum endpoints
 
-// API endpoint to get all messages
-app.get('/messages', async (req, res) => {
-  const keys = await client.keys('message:*');
-  const messages = [];
+// API endpoint to get all threads
+app.get('/threads', async (req, res) => {
+  const keys = await client.keys('thread:*');
+  const threads = [];
   for (const key of keys) {
-    const message = await client.hGetAll(key);
-    messages.push(message);
+    const thread = await client.hGetAll(key);
+    threads.push(thread);
   }
-  res.json(messages);
+  res.json(threads);
 });
 
-// API endpoint to post a new message
-app.post('/messages', async (req, res) => {
+// API endpoint to post a new thread
+app.post('/threads', async (req, res) => {
+  const { userName, title, message } = req.body;
+  if (!userName || !title || !message) {
+    return res.status(400).send('User name, title, and message are required');
+  }
+
+  const id = `thread:${Date.now()}`;
+  const newThread = { id, userName, title, message, timestamp: new Date().toISOString(), replies: [] };
+  console.log('Adding to Redis:', id, newThread);
+
+  try {
+    await client.hSet(id, 'id', newThread.id);
+    await client.hSet(id, 'userName', newThread.userName);
+    await client.hSet(id, 'title', newThread.title);
+    await client.hSet(id, 'message', newThread.message);
+    await client.hSet(id, 'timestamp', newThread.timestamp);
+
+    res.status(201).send(newThread);
+  } catch (error) {
+    console.error('Error adding to Redis:', error);
+    res.status(500).send('Error adding thread');
+  }
+});
+
+// API endpoint to get a specific thread with replies
+app.get('/threads/:id', async (req, res) => {
+  const { id } = req.params;
+  const thread = await client.hGetAll(id);
+
+  if (!thread) {
+    return res.status(404).send('Thread not found');
+  }
+
+  const replyKeys = await client.keys(`reply:${id}:*`);
+  const replies = [];
+  for (const key of replyKeys) {
+    const reply = await client.hGetAll(key);
+    replies.push(reply);
+  }
+
+  thread.replies = replies;
+  res.json(thread);
+});
+
+// API endpoint to post a reply to a thread
+app.post('/threads/:id/replies', async (req, res) => {
+  const { id } = req.params;
   const { userName, message } = req.body;
   if (!userName || !message) {
     return res.status(400).send('User name and message are required');
   }
 
-  const id = `message:${Date.now()}`;
-  const newMessage = { userName, message, timestamp: new Date().toISOString() };
-  console.log('Adding to Redis:', id, newMessage);
+  const replyId = `reply:${id}:${Date.now()}`;
+  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString() };
+  console.log('Adding to Redis:', replyId, newReply);
 
   try {
-    await client.hSet(id, 'userName', newMessage.userName);
-    await client.hSet(id, 'message', newMessage.message);
-    await client.hSet(id, 'timestamp', newMessage.timestamp);
+    await client.hSet(replyId, 'id', newReply.id);
+    await client.hSet(replyId, 'userName', newReply.userName);
+    await client.hSet(replyId, 'message', newReply.message);
+    await client.hSet(replyId, 'timestamp', newReply.timestamp);
 
-    res.status(201).send(newMessage);
+    res.status(201).send(newReply);
   } catch (error) {
     console.error('Error adding to Redis:', error);
-    res.status(500).send('Error adding message');
+    res.status(500).send('Error adding reply');
   }
 });
 
