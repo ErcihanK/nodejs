@@ -27,7 +27,7 @@ app.post('/food-entry', async (req, res) => {
     return res.status(400).send('User name, food item, and calories are required');
   }
 
-  const id = `food:${Date.now()}`;
+  const id = food:${Date.now()};
   console.log('Adding to Redis:', id, { userName, foodItem, calories });
 
   try {
@@ -92,7 +92,7 @@ app.post('/threads', async (req, res) => {
     return res.status(400).send('User name, title, and message are required');
   }
 
-  const id = `thread:${Date.now()}`;
+  const id = thread:${Date.now()};
   const newThread = { id, userName, title, message, timestamp: new Date().toISOString(), replies: [] };
   console.log('Adding to Redis:', id, newThread);
 
@@ -119,38 +119,27 @@ app.get('/threads/:id', async (req, res) => {
     return res.status(404).send('Thread not found');
   }
 
-  const replyKeys = await client.keys(`reply:${id}:*`);
+  const replyKeys = await client.keys(reply:${id}:*);
   const replies = [];
   for (const key of replyKeys) {
     const reply = await client.hGetAll(key);
     replies.push(reply);
   }
 
-  // Organize replies by parent
-  const replyMap = {};
-  replies.forEach(reply => {
-    if (!reply.replyTo) {
-      replyMap[reply.id] = { ...reply, children: [] };
-    } else {
-      if (!replyMap[reply.replyTo]) replyMap[reply.replyTo] = { children: [] };
-      replyMap[reply.replyTo].children.push(reply);
-    }
-  });
-
-  thread.replies = Object.values(replyMap).filter(reply => !reply.replyTo);
+  thread.replies = replies;
   res.json(thread);
 });
 
 // API endpoint to post a reply to a thread
 app.post('/threads/:id/replies', async (req, res) => {
   const { id } = req.params;
-  const { userName, message, replyTo } = req.body; // Add replyTo field
+  const { userName, message } = req.body;
   if (!userName || !message) {
     return res.status(400).send('User name and message are required');
   }
 
-  const replyId = `reply:${id}:${Date.now()}`;
-  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString(), likes: 0, dislikes: 0, replyTo: replyTo || null, likedBy: [], dislikedBy: [] };
+  const replyId = reply:${id}:${Date.now()};
+  const newReply = { id: replyId, userName, message, timestamp: new Date().toISOString(), likes: 0, dislikes: 0, likedBy: [], dislikedBy: [] };
   console.log('Adding to Redis:', replyId, newReply);
 
   try {
@@ -160,14 +149,13 @@ app.post('/threads/:id/replies', async (req, res) => {
     await client.hSet(replyId, 'timestamp', newReply.timestamp);
     await client.hSet(replyId, 'likes', newReply.likes);
     await client.hSet(replyId, 'dislikes', newReply.dislikes);
-    await client.hSet(replyId, 'replyTo', newReply.replyTo);
     await client.hSet(replyId, 'likedBy', JSON.stringify(newReply.likedBy));
     await client.hSet(replyId, 'dislikedBy', JSON.stringify(newReply.dislikedBy));
 
     res.status(201).send(newReply);
   } catch (error) {
     console.error('Error adding to Redis:', error);
-    res.status(500).send('Error adding reply: ' + error.message);
+    res.status(500).send('Error adding reply');
   }
 });
 
@@ -228,5 +216,5 @@ app.post('/threads/:threadId/replies/:replyId/dislike', async (req, res) => {
 });
 
 app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+  console.log(Server running on port ${port});
 });
