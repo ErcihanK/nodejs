@@ -20,28 +20,6 @@ client.connect().then(() => {
   console.log('Connected to Redis');
 });
 
-// Define a set of possible workouts
-const workouts = [
-  { name: 'Push-Ups', description: '3 sets of 15 reps' },
-  { name: 'Squats', description: '3 sets of 20 reps' },
-  { name: 'Planks', description: '3 sets of 1 minute' },
-  { name: 'Jumping Jacks', description: '3 sets of 50 reps' },
-  { name: 'Burpees', description: '3 sets of 10 reps' },
-  { name: 'Lunges', description: '3 sets of 15 reps per leg' },
-];
-
-// Function to generate random workouts
-const generateRandomWorkouts = () => {
-  const shuffled = workouts.sort(() => 0.5 - Math.random());
-  return shuffled.slice(0, 3); // Return 3 random workouts
-};
-
-// API endpoint to get random workouts
-app.get('/random-workouts', (req, res) => {
-  const randomWorkouts = generateRandomWorkouts();
-  res.json(randomWorkouts);
-});
-
 // API endpoint to post a new food entry
 app.post('/food-entry', async (req, res) => {
   const { userName, foodItem, calories } = req.body;
