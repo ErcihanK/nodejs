@@ -2,13 +2,23 @@ const express = require('express');
 const redis = require('redis');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const session = require('express-session'); // Add session management
 
 const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(bodyParser.json());
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000', // Adjust according to your frontend URL
+  credentials: true
+}));
+app.use(session({
+  secret: 'your-secret-key',
+  resave: false,
+  saveUninitialized: true,
+  cookie: { secure: false } // Set secure: true in production
+}));
 
 // Redis client setup
 const redisUrl = process.env.REDIS_URL || 'redis://default:pVfsPsHSoGstDPuOSwuQYFYLZUPvJIwb@viaduct.proxy.rlwy.net:11001';
@@ -23,7 +33,7 @@ client.connect().then(() => {
 // Middleware to check user roles
 const checkRole = (role) => {
   return async (req, res, next) => {
-    const userId = req.userId; // Assuming userId is set after authentication
+    const userId = req.session.userId; // Assuming userId is set after authentication
     const userRole = await client.hGet(`user:${userId}`, 'role');
     if (userRole !== role) {
       return res.status(403).send('Access denied');
@@ -69,6 +79,22 @@ app.post('/login', async (req, res) => {
   req.session.role = role; // Use session to store user role
 
   res.status(200).send({ userName, role });
+});
+
+// API endpoint to get user role
+app.get('/user-role', async (req, res) => {
+  const userId = req.session.userId; // Assuming you have session management
+  if (!userId) {
+    return res.status(401).send('User not logged in');
+  }
+
+  try {
+    const role = await client.hGet(`user:${userId}`, 'role');
+    res.json({ role });
+  } catch (error) {
+    console.error('Error fetching user role:', error);
+    res.status(500).send('Error fetching user role');
+  }
 });
 
 // Admin-only route
