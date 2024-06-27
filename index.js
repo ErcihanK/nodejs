@@ -215,6 +215,29 @@ app.post('/threads/:threadId/replies/:replyId/dislike', async (req, res) => {
   }
 });
 
+// API endpoint to update user data
+app.put('/user/:id', async (req, res) => {
+  const { id } = req.params;
+  const { weight, height, age } = req.body;
+
+  try {
+    const exists = await client.exists(id);
+    if (!exists) {
+      return res.status(404).send('User not found');
+    }
+
+    await client.hSet(id, 'weight', weight);
+    await client.hSet(id, 'height', height);
+    await client.hSet(id, 'age', age);
+
+    res.status(200).send('User data updated');
+  } catch (error) {
+    console.error('Error updating user data:', error);
+    res.status(500).send('Error updating user data');
+  }
+});
+
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
