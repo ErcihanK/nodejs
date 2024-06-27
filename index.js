@@ -221,11 +221,6 @@ app.put('/user/:id', async (req, res) => {
   const { weight, height, age } = req.body;
 
   try {
-    const exists = await client.exists(id);
-    if (!exists) {
-      return res.status(404).send('User not found');
-    }
-
     await client.hSet(id, 'weight', weight);
     await client.hSet(id, 'height', height);
     await client.hSet(id, 'age', age);
