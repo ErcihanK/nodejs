@@ -237,6 +237,22 @@ app.put('/user/:id', async (req, res) => {
   }
 });
 
+// API endpoint to get user data
+app.get('/user/:id', async (req, res) => {
+  const { id } = req.params;
+
+  try {
+    const userData = await client.hGetAll(id);
+    if (!userData) {
+      return res.status(404).send('User not found');
+    }
+
+    res.json(userData);
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    res.status(500).send('Error fetching user data');
+  }
+});
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
