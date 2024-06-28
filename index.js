@@ -35,7 +35,7 @@ app.post('/food-entry', async (req, res) => {
     await client.hSet(id, 'foodItem', foodItem);
     await client.hSet(id, 'calories', calories);
 
-    res.status(201).send('Food entry added');
+    res.status(201).json({ id, userName, foodItem, calories }); // Return JSON response
   } catch (error) {
     console.error('Error adding to Redis:', error);
     res.status(500).send('Error adding food entry');
