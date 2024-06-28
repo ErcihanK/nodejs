@@ -2,7 +2,6 @@ const express = require('express');
 const redis = require('redis');
 const bodyParser = require('body-parser');
 const cors = require('cors');
-const axios = require('axios'); // Import axios
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -21,37 +20,20 @@ client.connect().then(() => {
   console.log('Connected to Redis');
 });
 
-// Function to fetch food image from TheMealDB API
-const fetchFoodImage = async (foodItem) => {
-  try {
-    const response = await axios.get(`https://www.themealdb.com/api/json/v1/1/search.php?s=${foodItem}`);
-    if (response.data.meals) {
-      return response.data.meals[0].strMealThumb;
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching food image:', error);
-    return null;
-  }
-};
-
 // API endpoint to post a new food entry
 app.post('/food-entry', async (req, res) => {
-  const { userName, foodItem, calories, date } = req.body;
-  if (!userName || !foodItem || !calories || !date) {
-    return res.status(400).send('User name, food item, calories, and date are required');
+  const { userName, foodItem, calories } = req.body;
+  if (!userName || !foodItem || !calories) {
+    return res.status(400).send('User name, food item, and calories are required');
   }
 
   const id = `food:${Date.now()}`;
-  console.log('Adding to Redis:', id, { userName, foodItem, calories, date });
+  console.log('Adding to Redis:', id, { userName, foodItem, calories });
 
   try {
-    const foodImage = await fetchFoodImage(foodItem);
     await client.hSet(id, 'userName', userName);
     await client.hSet(id, 'foodItem', foodItem);
     await client.hSet(id, 'calories', calories);
-    await client.hSet(id, 'date', date);
-    await client.hSet(id, 'foodImage', foodImage);
 
     res.status(201).send('Food entry added');
   } catch (error) {
@@ -239,6 +221,11 @@ app.put('/user/:id', async (req, res) => {
   const { weight, height, age } = req.body;
 
   try {
+    const exists = await client.exists(id);
+    if (!exists) {
+      return res.status(404).send('User not found');
+    }
+
     await client.hSet(id, 'weight', weight);
     await client.hSet(id, 'height', height);
     await client.hSet(id, 'age', age);
