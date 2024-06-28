@@ -20,6 +20,20 @@ client.connect().then(() => {
   console.log('Connected to Redis');
 });
 
+// Function to fetch food image from TheMealDB API
+const fetchFoodImage = async (foodItem) => {
+  try {
+    const response = await axios.get(`https://www.themealdb.com/api/json/v1/1/search.php?s=${foodItem}`);
+    if (response.data.meals) {
+      return response.data.meals[0].strMealThumb;
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching food image:', error);
+    return null;
+  }
+};
+
 // API endpoint to post a new food entry
 app.post('/food-entry', async (req, res) => {
   const { userName, foodItem, calories } = req.body;
