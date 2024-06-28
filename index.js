@@ -2,6 +2,7 @@ const express = require('express');
 const redis = require('redis');
 const bodyParser = require('body-parser');
 const cors = require('cors');
+const axios = require('axios'); // Import axios
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -88,7 +89,6 @@ app.delete('/food-entry/:id', async (req, res) => {
     res.status(500).send('Error deleting food entry');
   }
 });
-
 
 // Community forum endpoints
 
