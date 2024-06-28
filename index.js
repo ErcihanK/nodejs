@@ -254,6 +254,29 @@ app.get('/user/:id', async (req, res) => {
   }
 });
 
+// API endpoint to delete a thread (admin only)
+app.delete('/threads/:id', async (req, res) => {
+  const { userName } = req.body;
+  const { id } = req.params;
+
+  if (userName !== 'admin') {
+    return res.status(403).send('Permission denied');
+  }
+
+  try {
+    const exists = await client.exists(id);
+    if (!exists) {
+      return res.status(404).send('Thread not found');
+    }
+
+    await client.del(id);
+    res.status(200).send('Thread deleted');
+  } catch (error) {
+    console.error('Error deleting thread from Redis:', error);
+    res.status(500).send('Error deleting thread');
+  }
+});
+
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
 });
