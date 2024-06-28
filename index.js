@@ -36,18 +36,21 @@ const fetchFoodImage = async (foodItem) => {
 
 // API endpoint to post a new food entry
 app.post('/food-entry', async (req, res) => {
-  const { userName, foodItem, calories } = req.body;
-  if (!userName || !foodItem || !calories) {
-    return res.status(400).send('User name, food item, and calories are required');
+  const { userName, foodItem, calories, date } = req.body;
+  if (!userName || !foodItem || !calories || !date) {
+    return res.status(400).send('User name, food item, calories, and date are required');
   }
 
   const id = `food:${Date.now()}`;
-  console.log('Adding to Redis:', id, { userName, foodItem, calories });
+  console.log('Adding to Redis:', id, { userName, foodItem, calories, date });
 
   try {
+    const foodImage = await fetchFoodImage(foodItem);
     await client.hSet(id, 'userName', userName);
     await client.hSet(id, 'foodItem', foodItem);
     await client.hSet(id, 'calories', calories);
+    await client.hSet(id, 'date', date);
+    await client.hSet(id, 'foodImage', foodImage);
 
     res.status(201).send('Food entry added');
   } catch (error) {
@@ -85,6 +88,7 @@ app.delete('/food-entry/:id', async (req, res) => {
     res.status(500).send('Error deleting food entry');
   }
 });
+
 
 // Community forum endpoints
 
