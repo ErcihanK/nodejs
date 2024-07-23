@@ -10,7 +10,23 @@ const redisClient = redis.createClient({
   url: 'redis://default:pVfsPsHSoGstDPuOSwuQYFYLZUPvJIwb@viaduct.proxy.rlwy.net:11001'
 });
 
-redisClient.connect().catch(console.error);
+async function initializeRedis() {
+  await redisClient.connect();
+  console.log('Connected to Redis');
+
+  // Create a test user
+  const testUsername = 'testuser';
+  const testPassword = 'password123';
+
+  try {
+    await redisClient.set(`user:${testUsername}`, testPassword);
+    console.log(`Test user created: ${testUsername}`);
+  } catch (error) {
+    console.error('Error creating test user:', error);
+  }
+}
+
+initializeRedis().catch(console.error);
 
 app.post('/login', async (req, res) => {
   const { username, password } = req.body;
